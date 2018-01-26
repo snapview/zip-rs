@@ -268,6 +268,11 @@ impl<R: Read+io::Seek> ZipArchive<R>
     {
         self.reader
     }
+
+    /// Returns the parsed local file headers for the file entries inside the archive.
+    pub fn get_raw_zip_data(&self) -> &Vec<ZipFileData> {
+        &self.files
+    }
 }
 
 fn central_header_to_zip_file<R: Read+io::Seek>(reader: &mut R, archive_offset: u64) -> ZipResult<ZipFileData>

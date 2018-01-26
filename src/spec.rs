@@ -1,11 +1,20 @@
+//! Contains a specifications of a central directory of the ZIP archive. For more information,
+//! refer to the documentation of the ZIP format
+//! (https://users.cs.jmu.edu/buchhofp/forensics/formats/pkzip.html).
+
+#![allow(missing_docs)]
+
 use std::io;
 use std::io::prelude::*;
 use result::{ZipResult, ZipError};
 use podio::{ReadPodExt, WritePodExt, LittleEndian};
 
+/// A 4-byte sequence of a local file header magic signature.
 pub const LOCAL_FILE_HEADER_SIGNATURE : u32 = 0x04034b50;
+/// A 4-byte sequence of a central directory header magic signature.
 pub const CENTRAL_DIRECTORY_HEADER_SIGNATURE : u32 = 0x02014b50;
 const CENTRAL_DIRECTORY_END_SIGNATURE : u32 = 0x06054b50;
+/// A 4-byte sequence of a central directory end signature.
 pub const ZIP64_CENTRAL_DIRECTORY_END_SIGNATURE : u32 = 0x06064b50;
 const ZIP64_CENTRAL_DIRECTORY_END_LOCATOR_SIGNATURE : u32 = 0x07064b50;
 

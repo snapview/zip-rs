@@ -419,7 +419,9 @@ impl<W: Write+io::Seek> GenericZipWriter<W>
     }
 }
 
-fn write_local_file_header<T: Write>(writer: &mut T, file: &ZipFileData) -> ZipResult<()>
+/// Writes a local file header to a given writer using the local file header data specified in the
+/// argument.
+pub fn write_local_file_header<T: Write>(writer: &mut T, file: &ZipFileData) -> ZipResult<()>
 {
     // local file header signature
     try!(writer.write_u32::<LittleEndian>(spec::LOCAL_FILE_HEADER_SIGNATURE));
@@ -464,7 +466,9 @@ fn update_local_file_header<T: Write+io::Seek>(writer: &mut T, file: &ZipFileDat
     Ok(())
 }
 
-fn write_central_directory_header<T: Write>(writer: &mut T, file: &ZipFileData) -> ZipResult<()>
+/// Writes a central directory header to a given writer given the local file header entry passed as
+/// an argument.
+pub fn write_central_directory_header<T: Write>(writer: &mut T, file: &ZipFileData) -> ZipResult<()>
 {
     // central file header signature
     try!(writer.write_u32::<LittleEndian>(spec::CENTRAL_DIRECTORY_HEADER_SIGNATURE));

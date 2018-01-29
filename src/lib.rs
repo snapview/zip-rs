@@ -4,8 +4,10 @@
 
 #[cfg(feature = "bzip2")]
 extern crate bzip2;
-#[cfg(feature = "deflate")]
+#[cfg(feature = "flate2")]
 extern crate flate2;
+#[cfg(feature = "inflate")]
+extern crate inflate;
 extern crate msdos_time;
 extern crate podio;
 extern crate time;

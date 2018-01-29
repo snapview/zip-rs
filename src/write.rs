@@ -11,9 +11,9 @@ use std::io::prelude::*;
 use std::mem;
 use podio::{WritePodExt, LittleEndian};
 
-#[cfg(feature = "deflate")]
+#[cfg(feature = "flate2")]
 use flate2;
-#[cfg(feature = "deflate")]
+#[cfg(feature = "flate2")]
 use flate2::write::DeflateEncoder;
 
 #[cfg(feature = "bzip2")]
@@ -27,7 +27,7 @@ enum GenericZipWriter<W: Write + io::Seek>
 {
     Closed,
     Storer(W),
-    #[cfg(feature = "deflate")]
+    #[cfg(feature = "flate2")]
     Deflater(DeflateEncoder<W>),
     #[cfg(feature = "bzip2")]
     Bzip2(BzEncoder<W>),
@@ -80,7 +80,7 @@ pub struct FileOptions {
 }
 
 impl FileOptions {
-    #[cfg(feature = "deflate")]
+    #[cfg(feature = "flate2")]
     /// Construct a new FileOptions object
     pub fn default() -> FileOptions {
         FileOptions {
@@ -89,7 +89,7 @@ impl FileOptions {
         }
     }
 
-    #[cfg(not(feature = "deflate"))]
+    #[cfg(not(feature = "flate2"))]
     /// Construct a new FileOptions object
     pub fn default() -> FileOptions {
         FileOptions {
@@ -337,7 +337,7 @@ impl<W: Write+io::Seek> GenericZipWriter<W>
         let bare = match mem::replace(self, GenericZipWriter::Closed)
         {
             GenericZipWriter::Storer(w) => w,
-            #[cfg(feature = "deflate")]
+            #[cfg(feature = "flate2")]
             GenericZipWriter::Deflater(w) => try!(w.finish()),
             #[cfg(feature = "bzip2")]
             GenericZipWriter::Bzip2(w) => try!(w.finish()),
@@ -347,8 +347,10 @@ impl<W: Write+io::Seek> GenericZipWriter<W>
         *self = match compression
         {
             CompressionMethod::Stored => GenericZipWriter::Storer(bare),
-            #[cfg(feature = "deflate")]
+            #[cfg(feature = "flate2")]
             CompressionMethod::Deflated => GenericZipWriter::Deflater(DeflateEncoder::new(bare, flate2::Compression::default())),
+            #[cfg(feature = "deflate")]
+            CompressionMethod::Deflated => unimplemented!(),
             #[cfg(feature = "bzip2")]
             CompressionMethod::Bzip2 => GenericZipWriter::Bzip2(BzEncoder::new(bare, bzip2::Compression::Default)),
             CompressionMethod::Unsupported(..) => return Err(ZipError::UnsupportedArchive("Unsupported compression")),
@@ -360,7 +362,7 @@ impl<W: Write+io::Seek> GenericZipWriter<W>
     fn ref_mut(&mut self) -> Option<&mut Write> {
         match *self {
             GenericZipWriter::Storer(ref mut w) => Some(w as &mut Write),
-            #[cfg(feature = "deflate")]
+            #[cfg(feature = "flate2")]
             GenericZipWriter::Deflater(ref mut w) => Some(w as &mut Write),
             #[cfg(feature = "bzip2")]
             GenericZipWriter::Bzip2(ref mut w) => Some(w as &mut Write),
@@ -389,7 +391,7 @@ impl<W: Write+io::Seek> GenericZipWriter<W>
     fn current_compression(&self) -> Option<CompressionMethod> {
         match *self {
             GenericZipWriter::Storer(..) => Some(CompressionMethod::Stored),
-            #[cfg(feature = "deflate")]
+            #[cfg(feature = "flate2")]
             GenericZipWriter::Deflater(..) => Some(CompressionMethod::Deflated),
             #[cfg(feature = "bzip2")]
             GenericZipWriter::Bzip2(..) => Some(CompressionMethod::Bzip2),

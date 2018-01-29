@@ -12,10 +12,15 @@ use podio::{ReadPodExt, LittleEndian};
 use types::{ZipFileData, System};
 use cp437::FromCp437;
 
-#[cfg(feature = "deflate")]
+#[cfg(feature = "flate2")]
 use flate2;
-#[cfg(feature = "deflate")]
+#[cfg(feature = "flate2")]
 use flate2::read::DeflateDecoder;
+
+#[cfg(feature = "deflate")]
+use inflate;
+#[cfg(feature = "deflate")]
+use inflate::DeflateDecoder;
 
 #[cfg(feature = "bzip2")]
 use bzip2::read::BzDecoder;
@@ -62,8 +67,10 @@ pub struct ZipArchive<R: Read + io::Seek>
 
 enum ZipFileReader<'a> {
     Stored(Crc32Reader<io::Take<&'a mut Read>>),
-    #[cfg(feature = "deflate")]
+    #[cfg(feature = "flate2")]
     Deflated(Crc32Reader<flate2::read::DeflateDecoder<io::Take<&'a mut Read>>>),
+    #[cfg(feature = "deflate")]
+    Deflated(Crc32Reader<inflate::DeflateDecoder<io::Take<&'a mut Read>>>),
     #[cfg(feature = "bzip2")]
     Bzip2(Crc32Reader<BzDecoder<io::Take<&'a mut Read>>>),
 }
@@ -239,6 +246,14 @@ impl<R: Read+io::Seek> ZipArchive<R>
                     limit_reader,
                     data.crc32))
             },
+            #[cfg(feature = "flate2")]
+            CompressionMethod::Deflated =>
+            {
+                let deflate_reader = DeflateDecoder::new(limit_reader);
+                ZipFileReader::Deflated(Crc32Reader::new(
+                    deflate_reader,
+                    data.crc32))
+            },
             #[cfg(feature = "deflate")]
             CompressionMethod::Deflated =>
             {
@@ -388,6 +403,8 @@ impl<'a> ZipFile<'a> {
     fn get_reader(&mut self) -> &mut Read {
         match self.reader {
            ZipFileReader::Stored(ref mut r) => r as &mut Read,
+           #[cfg(feature = "flate2")]
+           ZipFileReader::Deflated(ref mut r) => r as &mut Read,
            #[cfg(feature = "deflate")]
            ZipFileReader::Deflated(ref mut r) => r as &mut Read,
            #[cfg(feature = "bzip2")]

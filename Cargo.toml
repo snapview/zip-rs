@@ -22,8 +22,3 @@ walkdir = "1.0"
 [features]
 deflate = ["flate2"]
 default = ["deflate"]
-
-[patch.crates-io]
-miniz_oxide = {  path = "../miniz_oxide/miniz_oxide" }
-miniz_oxide_c_api = { path = "../miniz_oxide" }
-flate2 = { path = "../flate2-rs" }

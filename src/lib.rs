@@ -6,9 +6,7 @@
 extern crate bzip2;
 #[cfg(feature = "deflate")]
 extern crate flate2;
-extern crate msdos_time;
 extern crate podio;
-extern crate time;
 
 pub use read::ZipArchive;
 pub use write::ZipWriter;

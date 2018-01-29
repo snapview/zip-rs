@@ -11,7 +11,6 @@ use std::collections::HashMap;
 use podio::{ReadPodExt, LittleEndian};
 use types::{ZipFileData, System};
 use cp437::FromCp437;
-use msdos_time::{TmMsDosExt, MsDosDateTime};
 
 #[cfg(feature = "deflate")]
 use flate2;
@@ -344,7 +343,8 @@ fn central_header_to_zip_file<R: Read+io::Seek>(reader: &mut R, archive_offset: 
         version_made_by: version_made_by as u8,
         encrypted: encrypted,
         compression_method: CompressionMethod::from_u16(compression_method),
-        last_modified_time: try!(::time::Tm::from_msdos(MsDosDateTime::new(last_mod_time, last_mod_date))),
+        last_mod_time: last_mod_time,
+        last_mod_date: last_mod_date,
         crc32: crc32,
         compressed_size: compressed_size as u64,
         uncompressed_size: uncompressed_size as u64,
@@ -421,10 +421,6 @@ impl<'a> ZipFile<'a> {
     /// Get the size of the file when uncompressed
     pub fn size(&self) -> u64 {
         self.data.uncompressed_size
-    }
-    /// Get the time the file was last modified
-    pub fn last_modified(&self) -> ::time::Tm {
-        self.data.last_modified_time
     }
     /// Get unix mode for the file
     pub fn unix_mode(&self) -> Option<u32> {

@@ -9,9 +9,7 @@ use std::default::Default;
 use std::io;
 use std::io::prelude::*;
 use std::mem;
-use time;
 use podio::{WritePodExt, LittleEndian};
-use msdos_time::TmMsDosExt;
 
 #[cfg(feature = "deflate")]
 use flate2;
@@ -78,7 +76,6 @@ struct ZipWriterStats
 #[derive(Copy, Clone)]
 pub struct FileOptions {
     compression_method: CompressionMethod,
-    last_modified_time: time::Tm,
     permissions: Option<u32>,
 }
 
@@ -88,7 +85,6 @@ impl FileOptions {
     pub fn default() -> FileOptions {
         FileOptions {
             compression_method: CompressionMethod::Deflated,
-            last_modified_time: time::now(),
             permissions: None,
         }
     }
@@ -98,7 +94,6 @@ impl FileOptions {
     pub fn default() -> FileOptions {
         FileOptions {
             compression_method: CompressionMethod::Stored,
-            last_modified_time: time::now(),
             permissions: None,
         }
     }
@@ -110,14 +105,6 @@ impl FileOptions {
     /// otherwise.
     pub fn compression_method(mut self, method: CompressionMethod) -> FileOptions {
         self.compression_method = method;
-        self
-    }
-
-    /// Set the last modified time
-    ///
-    /// The default is the current timestamp
-    pub fn last_modified_time(mut self, mod_time: time::Tm) -> FileOptions {
-        self.last_modified_time = mod_time;
         self
     }
 
@@ -204,7 +191,8 @@ impl<W: Write+io::Seek> ZipWriter<W>
                 version_made_by: DEFAULT_VERSION,
                 encrypted: false,
                 compression_method: options.compression_method,
-                last_modified_time: options.last_modified_time,
+                last_mod_time: 0,
+                last_mod_date: 0,
                 crc32: 0,
                 compressed_size: 0,
                 uncompressed_size: 0,
@@ -434,9 +422,8 @@ pub fn write_local_file_header<T: Write>(writer: &mut T, file: &ZipFileData) -> 
     // Compression method
     try!(writer.write_u16::<LittleEndian>(file.compression_method.to_u16()));
     // last mod file time and last mod file date
-    let msdos_datetime = try!(file.last_modified_time.to_msdos());
-    try!(writer.write_u16::<LittleEndian>(msdos_datetime.timepart));
-    try!(writer.write_u16::<LittleEndian>(msdos_datetime.datepart));
+    try!(writer.write_u16::<LittleEndian>(file.last_mod_time));
+    try!(writer.write_u16::<LittleEndian>(file.last_mod_date));
     // crc-32
     try!(writer.write_u32::<LittleEndian>(file.crc32));
     // compressed size
@@ -483,9 +470,8 @@ pub fn write_central_directory_header<T: Write>(writer: &mut T, file: &ZipFileDa
     // compression method
     try!(writer.write_u16::<LittleEndian>(file.compression_method.to_u16()));
     // last mod file time + date
-    let msdos_datetime = try!(file.last_modified_time.to_msdos());
-    try!(writer.write_u16::<LittleEndian>(msdos_datetime.timepart));
-    try!(writer.write_u16::<LittleEndian>(msdos_datetime.datepart));
+    try!(writer.write_u16::<LittleEndian>(file.last_mod_time));
+    try!(writer.write_u16::<LittleEndian>(file.last_mod_date));
     // crc-32
     try!(writer.write_u32::<LittleEndian>(file.crc32));
     // compressed size
@@ -549,7 +535,6 @@ mod test {
         mtime.tm_mday = 1;
         let options = FileOptions {
             compression_method: CompressionMethod::Stored,
-            last_modified_time: mtime,
             permissions: Some(33188),
         };
         writer.start_file("mimetype", options).unwrap();

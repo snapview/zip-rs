@@ -2,8 +2,6 @@
 
 #![allow(missing_docs)]
 
-use time;
-
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum System
 {
@@ -41,8 +39,10 @@ pub struct ZipFileData
     pub encrypted: bool,
     /// Compression method used to store the file
     pub compression_method: ::compression::CompressionMethod,
-    /// Last modified time. This will only have a 2 second precision.
-    pub last_modified_time: time::Tm,
+    /// Last modified time.
+    pub last_mod_time: u16,
+    /// Last modified date.
+    pub last_mod_date: u16,
     /// CRC32 checksum
     pub crc32: u32,
     /// Size of the file in the ZIP
